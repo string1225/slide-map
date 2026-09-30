@@ -15,5 +15,8 @@
     "moderate": "node --env-file=server/.env scripts/moderate.cjs",
     "deploy": "node scripts/deploy.cjs",
     "wechat:preview": "npm run build && node scripts/wechat-preview.cjs"
+  },
+  "dependencies": {
+    "sharp": "^0.35.5"
   }
 }

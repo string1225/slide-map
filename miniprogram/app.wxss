@@ -11,7 +11,9 @@ input,
 textarea {
   box-sizing: border-box;
 }
-button {
+button,
+button:not([size='mini']) {
+  width: auto;
   font-size: 28rpx;
   border-radius: 24rpx;
   line-height: 1.5;
@@ -161,7 +163,8 @@ button.danger {
   flex-wrap: wrap;
   gap: 12rpx;
 }
-.chip {
+button.chip {
+  color: #205b46;
   padding: 13rpx 24rpx;
   font-size: 25rpx;
   border-radius: 100rpx;
@@ -170,7 +173,7 @@ button.danger {
   white-space: nowrap;
   font-weight: 400;
 }
-.chip.active {
+button.chip.active {
   background: #205b46;
   border-color: #205b46;
   color: #fffdf4;

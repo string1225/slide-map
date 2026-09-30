@@ -19,13 +19,13 @@ const sample = {
   amenities: ['有遮阴'],
   openingHours: '全天',
 };
-async function fixture(t, { demo = false, moderate = async () => {} } = {}) {
+async function fixture(t, { demo = false, moderate = async () => {}, moderateImage = async () => {} } = {}) {
   const store = createStore();
   const server = createApi({
     store,
     appid: 'test-app',
     demo,
-    wechat: { login: async (code) => 'openid-' + code, moderate },
+    wechat: { login: async (code) => 'openid-' + code, moderate, moderateImage },
   });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   t.after(async () => {
@@ -46,7 +46,7 @@ async function fixture(t, { demo = false, moderate = async () => {} } = {}) {
     assert.equal(r.status, 200);
     return r.data;
   }
-  return { store, call, login };
+  return { store, call, login, base };
 }
 test('validation rejects malformed coordinates, unsafe ratings, and unsupported fields', () => {
   for (const latitude of [null, '31', NaN, 91, Infinity])
@@ -56,7 +56,14 @@ test('validation rejects malformed coordinates, unsafe ratings, and unsupported 
   assert.throws(() => slideInput({ ...sample, amenities: ['管理员'] }));
   assert.throws(() => slideInput({ ...sample, type: '假的类型' }));
   assert.throws(() => reviewInput({ rating: 5, content: '短' }));
-  assert.deepEqual(slideInput({ ...sample, creatorId: 'forged' }), sample);
+  assert.deepEqual(slideInput({ ...sample, creatorId: 'forged' }), {
+    ...sample,
+    photos: [],
+    parking: '',
+    parkingAddress: '',
+    parkingLocation: null,
+    traffic: '',
+  });
   assert.ok(distanceKm(0, 179.99, 0, -179.99) < 3);
 });
 test('guest browsing works; writes, private scopes, and missing privacy consent require auth', async (t) => {
@@ -272,4 +279,110 @@ test('WeChat exchange and moderation redact upstream errors and fail closed', as
     () => unknown.moderate('wx-user', '文本'),
     (e) => e.status === 503,
   );
+});
+
+test('photos are decoded, stripped of metadata, owner-bound and private until published', async (t) => {
+  const sharp = require('sharp');
+  const { call, login, base, store } = await fixture(t);
+  const author = await login(),
+    reader = await login('reader');
+  const image = await sharp({ create: { width: 900, height: 500, channels: 3, background: '#205b46' } })
+    .jpeg()
+    .withExif({ IFD0: { Copyright: 'must be stripped' } })
+    .toBuffer();
+  const upload = async (body, token = author.token, type = 'application/octet-stream') =>
+    fetch(base + '/photos', {
+      method: 'POST',
+      headers: { 'Content-Type': type, ...(token ? { Authorization: 'Bearer ' + token } : {}) },
+      body,
+    });
+  assert.equal((await upload(image, null)).status, 401);
+  assert.equal((await upload(image, author.token, 'text/html')).status, 415);
+  assert.equal((await upload(Buffer.from('<svg onload="alert(1)"></svg>'))).status, 400);
+  assert.equal((await upload(Buffer.alloc(8 * 1024 * 1024 + 1))).status, 413);
+  const response = await upload(image);
+  assert.equal(response.status, 201);
+  const { id } = await response.json();
+  assert.equal((await fetch(base + '/photos/' + id)).status, 404);
+  assert.equal((await call('/slides', 'POST', { ...sample, photos: [id] }, reader.token)).status, 400);
+  const travel = {
+    photos: [id],
+    amenities: ['座椅少', '可骑车'],
+    parking: '停车收费',
+    parkingAddress: '公园南门停车场',
+    parkingLocation: { latitude: 31.23, longitude: 121.47 },
+    traffic: '地铁站步行十分钟\n从南门进入',
+  };
+  const created = await call('/slides', 'POST', { ...sample, ...travel }, author.token);
+  assert.equal(created.status, 201);
+  for (const [key, value] of Object.entries(travel)) assert.deepEqual(created.data[key], value);
+  const published = await fetch(base + '/photos/' + id);
+  assert.equal(published.status, 200);
+  assert.equal(published.headers.get('content-type'), 'image/jpeg');
+  const metadata = await sharp(Buffer.from(await published.arrayBuffer())).metadata();
+  assert.equal(metadata.width, 750);
+  assert.equal(metadata.exif, undefined);
+  store.db.prepare('UPDATE slides SET hidden=1 WHERE id=?').run(created.data.id);
+  assert.equal((await fetch(base + '/photos/' + id)).status, 404);
+  store.db.prepare('UPDATE slides SET hidden=0 WHERE id=?').run(created.data.id);
+  await call('/slides/' + created.data.id, 'PUT', { ...sample, photos: [] }, author.token);
+  assert.equal((await fetch(base + '/photos/' + id)).status, 404);
+});
+
+test('rejected photos never enter storage, and travel/photo validation is enforced', async (t) => {
+  const sharp = require('sharp');
+  const { login, base, store } = await fixture(t, {
+    moderateImage: async () => {
+      throw new HttpError(422, '照片不通过');
+    },
+  });
+  const author = await login();
+  const image = await sharp({ create: { width: 8, height: 8, channels: 3, background: 'white' } })
+    .png()
+    .toBuffer();
+  const response = await fetch(base + '/photos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/octet-stream', Authorization: 'Bearer ' + author.token },
+    body: image,
+  });
+  assert.equal(response.status, 422);
+  assert.equal(store.db.prepare('SELECT COUNT(*) n FROM photos').get().n, 0);
+  for (const invalid of [
+    { parking: '随便停车' },
+    { amenities: ['座椅多', '座椅少'] },
+    { traffic: '字'.repeat(501) },
+    { photos: ['../../secret'] },
+    { photos: Array(7).fill('a'.repeat(32)) },
+    { parkingLocation: { latitude: 100, longitude: 0 } },
+  ])
+    assert.throws(() => slideInput({ ...sample, ...invalid }));
+});
+
+test('old database upgrade preserves users, shares and sessions across repeated starts', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'slide-map-upgrade-'));
+  const filename = path.join(dir, 'test.sqlite');
+  let store;
+  try {
+    store = createStore(filename);
+    const user = store.login('upgrade', 'app');
+    const slide = store.createSlide(user.user.id, sample);
+    // Recreate the released schema by removing only the newly added columns.
+    store.db.exec(
+      'ALTER TABLE slides DROP COLUMN travel; ALTER TABLE slides DROP COLUMN photos; DROP TABLE photos',
+    );
+    store.close();
+    for (let i = 0; i < 2; i++) {
+      store = createStore(filename);
+      assert.equal(store.authenticate(user.token).id, user.user.id);
+      const migrated = store.detail(slide.id);
+      assert.equal(migrated.title, sample.title);
+      assert.deepEqual(migrated.photos, []);
+      assert.equal(migrated.traffic, '');
+      store.close();
+      store = null;
+    }
+  } finally {
+    if (store) store.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

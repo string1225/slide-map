@@ -30,6 +30,7 @@ Page({
       const slide = presentSlide(await api.request('/slides/' + this.id));
       this.setData({
         slide,
+        photos: (slide.photos || []).map(api.photoUrl),
         rating: slide.myReview?.rating || 5,
         content: slide.myReview?.content || '',
         markers: [
@@ -74,6 +75,19 @@ Page({
   },
   navigate() {
     api.navigate(this.data.slide).catch(api.toast);
+  },
+  previewPhoto(e) {
+    wx.previewImage({
+      urls: this.data.photos,
+      current: this.data.photos[Number(e.currentTarget.dataset.index)],
+    });
+  },
+  navigateParking() {
+    const slide = this.data.slide;
+    if (slide.parkingLocation)
+      api
+        .navigate({ ...slide.parkingLocation, title: '停车场', address: slide.parkingAddress })
+        .catch(api.toast);
   },
   async favorite() {
     if (this.favoriting) return;

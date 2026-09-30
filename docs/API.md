@@ -1,6 +1,6 @@
 # API 协议
 
-后端直接路径以 `/api` 开头；Nginx 模板把 `/wechat/slide-map/api/*` 映射到 `/api/*`。JSON 请求与响应。失败返回 `{error,message}`，客户端根据 HTTP 状态处理。
+后端直接路径以 `/api` 开头；Nginx 模板把 `/wechat/slide-map/api/*` 映射到 `/api/*`。除照片二进制接口外，使用 JSON 请求与响应。失败返回 `{error,message}`，客户端根据 HTTP 状态处理。
 
 | 方法               | 路径                       | 用途                                                               |
 | ------------------ | -------------------------- | ------------------------------------------------------------------ |
@@ -8,6 +8,8 @@
 | POST               | `/api/auth/wechat`         | `{code,acceptedPrivacy:true}`；返回 token、expiresAt、公开用户资料 |
 | POST               | `/api/auth/logout`         | 撤销当前会话                                                       |
 | GET / PATCH        | `/api/me`                  | 当前用户及统计 / 修改 `{nickname}`                                 |
+| POST               | `/api/photos`              | 登录后上传图片二进制，返回 `{id}`；最多8 MiB |
+| GET                | `/api/photos/:id`          | 读取已关联公开地点的 JPEG 照片 |
 | GET / POST         | `/api/slides`              | 检索 / 发布地点                                                    |
 | GET / PUT / DELETE | `/api/slides/:id`          | 详情 / 发布者编辑 / 发布者删除                                     |
 | GET / PUT / DELETE | `/api/slides/:id/reviews`  | 评价列表 / 保存本人的评价 / 删除本人的评价                         |
@@ -28,7 +30,12 @@
   "type": "公园滑梯",
   "ageBand": "3–6岁",
   "cost": "免费",
-  "amenities": ["有遮阴", "有座椅"],
+  "amenities": ["有遮阴", "座椅多", "可骑车"],
+  "photos": [],
+  "parking": "停车免费",
+  "parkingAddress": "公园南门停车场",
+  "parkingLocation": { "latitude": 31.2304, "longitude": 121.4737 },
+  "traffic": "地铁站步行十分钟，从南门进入。",
   "openingHours": "以现场公示为准"
 }
 ```
@@ -45,8 +52,16 @@
 
 ## 安全与运行边界
 
-请求体上限 16 KiB。单 IP 每分钟最多 240 次请求和 20 次登录；登录用户每分钟最多 30 次写入。Nginx 覆盖 X-Real-IP，后端只监听回环；仅在可信反代环境使用 TRUST_PROXY=1。
+JSON 请求体上限 16 KiB；照片上限 8 MiB。单 IP 每分钟最多 240 次请求和 20 次登录；登录用户每分钟最多 30 次写入。Nginx 覆盖 X-Real-IP，后端只监听回环；仅在可信反代环境使用 TRUST_PROXY=1。
 
 微信文本检查使用 msg_sec_check v2，昵称 scene=1，其余 scene=2。结果不是 pass、接口出错、缺失结果或微信不可用时拒绝写入。待人工复核的文本同样不会直接公开。举报文本不公开，供管理员处理。
 
 数据库和会话不与演示站点共用。`/api/auth/demo` 只由本机演示进程注册，生产入口不会启用。演示脚本不应通过反向代理公开。
+
+## 照片与交通
+
+`photos` 是最多6个服务器返回的照片 ID，不接受外部 URL。`POST /api/photos` 使用 `Content-Type: application/octet-stream` 和 Bearer 会话，客户端通过 wx.request 发送 ArrayBuffer，无须 multipart。服务器解码普通静态图片，限制像素数量，去除 EXIF/GPS 并转成最长边750像素的 JPEG，再使用微信 img_sec_check 检查；失败不保存。每个用户每分钟最多12次照片上传，每小时最多保存30张。
+
+上传后尚未关联公开地点的照片不能通过公开接口读取。只能给自己的地点关联本账号上传的照片；下架、移除或删除地点后相关照片不再公开。未关联的照片超过7天后会在后续上传清理中删除。SQLite保存照片二进制，和地点一起备份，不依赖发布目录。
+
+`parking` 可为空或停车免费／停车收费／不方便停车；`parkingAddress` 最长160字；可选 `parkingLocation` 使用GCJ-02经纬度；`traffic` 最长500字，保留换行。停车场文字地址手动修改时清除旧坐标，防止导航到之前的停车场。座椅多／座椅少互斥；接口兼容旧版本的有座椅／有停车位值。

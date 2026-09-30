@@ -42,11 +42,12 @@ Page({
   },
   async login() {
     if (this.data.busy) return;
-    this.setData({ busy: true });
+    this.setData({ busy: true, error: '' });
     try {
       await api.ensureLogin();
       await this.load();
     } catch (error) {
+      this.setData({ error: api.message(error) });
       api.toast(error);
     } finally {
       this.setData({ busy: false });
@@ -57,12 +58,13 @@ Page({
   },
   async save() {
     if (this.data.busy) return;
-    this.setData({ busy: true });
+    this.setData({ busy: true, error: '' });
     try {
       const user = await api.request('/me', 'PATCH', { nickname: this.data.nickname });
       this.setData({ user, nickname: user.nickname });
       wx.showToast({ title: '昵称已更新', icon: 'success' });
     } catch (error) {
+      this.setData({ error: api.message(error) });
       api.toast(error);
     } finally {
       this.setData({ busy: false });
@@ -94,6 +96,7 @@ Page({
     }
   },
   retry() {
-    this.load();
+    if (api.session()) this.load();
+    else this.login();
   },
 });

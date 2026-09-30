@@ -34,12 +34,48 @@ function createStore(filename = ':memory:') {
       user_id TEXT NOT NULL REFERENCES users(id), reason TEXT NOT NULL, created_at INTEGER NOT NULL, resolved INTEGER NOT NULL DEFAULT 0,
       UNIQUE(slide_id,user_id));`);
   db.function('distance_km', { deterministic: true }, distanceKm);
+  // Additive migration keeps existing shares and permits rolling back the application.
+  const columns = db
+    .prepare('PRAGMA table_info(slides)')
+    .all()
+    .map((c) => c.name);
+  if (!columns.includes('travel')) db.exec("ALTER TABLE slides ADD COLUMN travel TEXT NOT NULL DEFAULT '{}'");
+  if (!columns.includes('photos')) db.exec("ALTER TABLE slides ADD COLUMN photos TEXT NOT NULL DEFAULT '[]'");
+  db.exec(
+    `CREATE TABLE IF NOT EXISTS photos (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL REFERENCES users(id), image BLOB NOT NULL, created_at INTEGER NOT NULL)`,
+  );
   const publicUser = (row) => row && { id: row.id, nickname: row.nickname, createdAt: row.created_at };
   const slideColumns = `s.id,s.creator_id AS creatorId,s.title,s.address,s.description,s.latitude,s.longitude,s.type,
     s.age_band AS ageBand,s.cost,s.amenities,s.opening_hours AS openingHours,s.created_at AS createdAt,s.updated_at AS updatedAt,
-    u.nickname AS creatorName,COALESCE((SELECT AVG(rating) FROM reviews WHERE slide_id=s.id),0) AS rating,
+    s.travel,s.photos,u.nickname AS creatorName,COALESCE((SELECT AVG(rating) FROM reviews WHERE slide_id=s.id),0) AS rating,
     (SELECT COUNT(*) FROM reviews WHERE slide_id=s.id) AS reviewCount`;
-  const hydrate = (row) => row && { ...row, amenities: JSON.parse(row.amenities) };
+  const hydrate = (row) => {
+    if (!row) return row;
+    const { travel, ...fields } = row;
+    return {
+      parking: '',
+      parkingAddress: '',
+      parkingLocation: null,
+      traffic: '',
+      ...fields,
+      ...JSON.parse(travel),
+      photos: JSON.parse(row.photos),
+      amenities: JSON.parse(row.amenities),
+    };
+  };
+  function validatePhotos(uid, ids = []) {
+    for (const id of ids) {
+      if (!db.prepare('SELECT 1 FROM photos WHERE id=? AND owner_id=?').get(id, uid))
+        throw new HttpError(400, '照片已失效或不属于当前账号，请移除后重新添加');
+    }
+  }
+  const travelData = (input) =>
+    JSON.stringify({
+      parking: input.parking || '',
+      parkingAddress: input.parkingAddress || '',
+      parkingLocation: input.parkingLocation || null,
+      traffic: input.traffic || '',
+    });
   const requireSlide = (id) => {
     const row = db.prepare('SELECT * FROM slides WHERE id=? AND hidden=0').get(id);
     if (!row) throw new HttpError(404, '这个滑梯已下架或不存在');
@@ -52,6 +88,29 @@ function createStore(filename = ':memory:') {
   };
   return {
     db,
+    savePhoto(uid, image) {
+      db.prepare(
+        'DELETE FROM photos WHERE created_at<? AND NOT EXISTS(SELECT 1 FROM slides s,json_each(s.photos) p WHERE p.value=photos.id)',
+      ).run(Date.now() - 7 * 86400000);
+      if (
+        db
+          .prepare('SELECT COUNT(*) n FROM photos WHERE owner_id=? AND created_at>?')
+          .get(uid, Date.now() - 3600000).n >= 30
+      )
+        throw new HttpError(429, '照片上传过于频繁，请稍后再试');
+      const id = randomBytes(16).toString('hex');
+      db.prepare('INSERT INTO photos VALUES (?,?,?,?)').run(id, uid, image, Date.now());
+      return { id };
+    },
+    photo(id) {
+      const row = db
+        .prepare(
+          'SELECT image FROM photos WHERE id=? AND EXISTS(SELECT 1 FROM slides s,json_each(s.photos) p WHERE p.value=photos.id AND s.hidden=0)',
+        )
+        .get(id);
+      if (!row) throw new HttpError(404, '照片不存在');
+      return row.image;
+    },
     login(openid, appid) {
       const identity = digest(`${appid}:${openid}`),
         now = Date.now();
@@ -176,6 +235,7 @@ function createStore(filename = ':memory:') {
       return slide;
     },
     createSlide(uid, input) {
+      validatePhotos(uid, input.photos);
       const {
         title,
         address,
@@ -191,7 +251,7 @@ function createStore(filename = ':memory:') {
       const now = Date.now();
       const result = db
         .prepare(
-          `INSERT INTO slides (creator_id,title,address,description,latitude,longitude,type,age_band,cost,amenities,opening_hours,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+          `INSERT INTO slides (creator_id,title,address,description,latitude,longitude,type,age_band,cost,amenities,opening_hours,created_at,updated_at,travel,photos) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         )
         .run(
           uid,
@@ -207,11 +267,14 @@ function createStore(filename = ':memory:') {
           openingHours,
           now,
           now,
+          travelData(input),
+          JSON.stringify(input.photos || []),
         );
       return this.detail(Number(result.lastInsertRowid), uid);
     },
     updateSlide(id, uid, input) {
       requireOwner(id, uid);
+      validatePhotos(uid, input.photos);
       const {
         title,
         address,
@@ -225,7 +288,7 @@ function createStore(filename = ':memory:') {
         openingHours,
       } = input;
       db.prepare(
-        'UPDATE slides SET title=?,address=?,description=?,latitude=?,longitude=?,type=?,age_band=?,cost=?,amenities=?,opening_hours=?,updated_at=? WHERE id=?',
+        'UPDATE slides SET title=?,address=?,description=?,latitude=?,longitude=?,type=?,age_band=?,cost=?,amenities=?,opening_hours=?,updated_at=?,travel=?,photos=? WHERE id=?',
       ).run(
         title,
         address,
@@ -238,6 +301,8 @@ function createStore(filename = ':memory:') {
         JSON.stringify(amenities),
         openingHours,
         Date.now(),
+        travelData(input),
+        JSON.stringify(input.photos || []),
         id,
       );
       return this.detail(id, uid);

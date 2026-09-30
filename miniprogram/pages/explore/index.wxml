@@ -4,21 +4,20 @@
 </view>
 <view class="searchbar row"><text class="search-icon">⌕</text><input class="grow" placeholder="搜索滑梯、公园或城市" value="{{query}}" bindinput="input" bindconfirm="search" confirm-type="search" maxlength="80"/><button class="small" bindtap="search">搜索</button></view>
 <scroll-view class="filter-scroll" scroll-x enhanced show-scrollbar="{{false}}"><view class="filters"><button wx:for="{{types}}" wx:key="*this" class="chip {{type===item?'active':''}}" data-value="{{item}}" bindtap="type">{{item}}</button></view></scroll-view>
-<view class="toolbar row"><view class="muted">{{query?'全国搜索':located?'你附近的快乐':'当前地图区域'}} · {{total}} 处</view><button class="small ghost" bindtap="toggleView">{{view==='map'?'☷ 列表':'◎ 地图'}}</button></view>
+<view class="toolbar row"><view class="muted">{{query?'全国搜索':located?'你附近的快乐':'当前地图区域'}} · {{total}} 处</view></view>
 <view wx:if="{{error}}" class="notice error">{{error}}<text class="link" bindtap="retry">　点击重试</text></view>
-<view wx:if="{{view==='map'}}" class="map-wrap">
+<view class="map-wrap">
   <map id="slides-map" class="map" subkey="{{mapKey}}" latitude="{{latitude}}" longitude="{{longitude}}" scale="14" markers="{{markers}}" show-location="{{located}}" bindmarkertap="marker" bindcallouttap="detail" bindregionchange="region" enable-poi="{{false}}">
     <cover-view class="map-locate" bindtap="locate">◎ 定位</cover-view>
     <cover-view wx:if="{{areaChanged}}" class="map-search" bindtap="searchArea">搜索这片区域</cover-view>
   </map>
 </view>
 <view class="results">
-  <view class="row results-title"><text class="section-title">{{view==='map'?'在这里，玩一会儿':'发现更多滑梯'}}</text><view class="row"><text class="sort {{free?'chosen':''}}" bindtap="free">免费{{free?' ✓':''}}</text><text class="sort" bindtap="sort">{{sort==='rating'?'评分优先':'距离优先'}} ⇅</text></view></view>
+  <view class="row results-title"><text class="section-title">在这里，玩一会儿</text><view class="row"><text class="sort {{free?'chosen':''}}" bindtap="free">免费{{free?' ✓':''}}</text><text class="sort" bindtap="sort">{{sort==='rating'?'评分优先':'距离优先'}} ⇅</text></view></view>
   <view wx:if="{{loading}}" class="loading">正在寻找快乐…</view>
-  <block wx:if="{{view==='map' && selected}}">
+  <block wx:if="{{selected}}">
     <view class="card featured"><view class="row" data-id="{{selected.id}}" bindtap="detail"><view class="grow"><view class="place-title">{{selected.title}}</view><view class="muted line-clamp">{{selected.address}}</view></view><view class="rating">★ {{selected.ratingLabel}}</view></view><view><text class="tag">{{selected.type}}</text><text class="tag">{{selected.ageBand}}</text><text class="tag">{{selected.cost}}</text></view><view class="divider"/><view class="row"><text class="muted">{{selected.distanceLabel}} · {{selected.reviewCount}} 条评价</text><view class="row"><button class="small ghost" data-id="{{selected.id}}" bindtap="detail">看看详情</button><button class="small primary" bindtap="navigate">↗ 去这里</button></view></view></view>
   </block>
-  <block wx:if="{{view==='list'}}"><view wx:for="{{items}}" wx:key="id" class="card" data-id="{{item.id}}" bindtap="detail"><view class="row"><view class="place-title grow">{{item.title}}</view><text class="rating">★ {{item.ratingLabel}}</text></view><view class="muted line-clamp">{{item.address}}</view><view><text class="tag">{{item.type}}</text><text class="tag">{{item.cost}}</text><text class="tag">{{item.ageBand}}</text></view><view class="muted">{{item.distanceLabel}} · {{item.reviewCount}} 条评价　查看详情 →</view></view></block>
   <view wx:if="{{!items.length && !loading && !error}}" class="empty"><view class="empty-title">这片快乐，等你发现</view><view>试试搜索其他地点，或分享第一座滑梯。</view><button class="primary section" bindtap="publish">＋ 分享一座滑梯</button></view>
   <button wx:if="{{nextOffset!==null}}" class="ghost" bindtap="more" loading="{{loading}}">加载更多（已显示 {{items.length}} / {{total}}）</button>
   <view class="footnote">每一个标记，都是一次快乐的分享。</view>

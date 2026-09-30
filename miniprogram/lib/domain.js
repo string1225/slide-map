@@ -1,7 +1,8 @@
 const TYPES = ['全部', '公园滑梯', '社区滑梯', '室内乐园', '其他'];
 const AGES = ['全年龄', '1–3岁', '3–6岁', '6岁以上'];
 const COSTS = ['免费', '收费'];
-const AMENITIES = ['有遮阴', '有座椅', '有卫生间', '有停车位', '软质地面'];
+const AMENITIES = ['有遮阴', '座椅多', '座椅少', '有卫生间', '软质地面', '可骑车'];
+const PARKING = ['停车免费', '停车收费', '不方便停车'];
 class ValidationError extends Error {}
 function text(value, name, min, max) {
   if (typeof value !== 'string') throw new ValidationError(`请填写${name}`);
@@ -33,9 +34,22 @@ function slideInput(input) {
   if (
     !Array.isArray(amenities) ||
     amenities.length > AMENITIES.length ||
-    amenities.some((a) => !AMENITIES.includes(a))
+    amenities.some((a) => !AMENITIES.concat(['有座椅', '有停车位']).includes(a))
   )
     throw new ValidationError('配套设施选项无效');
+  if (amenities.includes('座椅多') && amenities.includes('座椅少'))
+    throw new ValidationError('座椅多和座椅少只能选择一项');
+  const photos = input.photos || [];
+  if (
+    !Array.isArray(photos) ||
+    photos.length > 6 ||
+    photos.some((id) => typeof id !== 'string' || !/^[a-f0-9]{32}$/.test(id))
+  )
+    throw new ValidationError('最多上传6张有效照片');
+  const parkingLocation =
+    input.parkingLocation == null
+      ? null
+      : coordinates(input.parkingLocation.latitude, input.parkingLocation.longitude);
   return {
     title: text(input.title, '滑梯名称', 2, 40),
     address: text(input.address, '地址', 2, 160),
@@ -46,6 +60,11 @@ function slideInput(input) {
     cost: choice(input.cost, COSTS, '收费情况'),
     amenities: [...new Set(amenities)],
     openingHours: text(input.openingHours || '以现场公示为准', '开放时间', 1, 80),
+    photos: [...new Set(photos)],
+    parking: choice(input.parking || '', ['', ...PARKING], '停车情况'),
+    parkingAddress: text(input.parkingAddress || '', '停车场地址', 0, 160),
+    parkingLocation,
+    traffic: text(input.traffic || '', '交通信息', 0, 500),
   };
 }
 function reviewInput(input) {
@@ -76,6 +95,7 @@ module.exports = {
   AGES,
   COSTS,
   AMENITIES,
+  PARKING,
   ValidationError,
   text,
   coordinates,

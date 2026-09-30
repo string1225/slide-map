@@ -56,6 +56,8 @@ test('failed publication retains the draft and re-enables the submit button', as
     'publish',
     {
       ensureLogin: async () => {},
+      message: (error) => error.message,
+      session: () => ({ user: {} }),
       request: async () => {
         throw new Error('网络中断');
       },
@@ -109,4 +111,88 @@ test('published tabs and page bundles exist and permissions are declared', () =>
   assert.deepEqual(app.requiredPrivateInfos, ['getLocation', 'chooseLocation']);
   for (const tab of app.tabBar.list) assert.ok(app.pages.includes(tab.pagePath));
   assert.ok(!fs.readFileSync('miniprogram/lib/api.js', 'utf8').includes('APP_SECRET'));
+});
+
+test('guest submission asks for login before validation and preserves entered content on cancellation', async () => {
+  let logins = 0;
+  const p = page(
+    'publish',
+    {
+      ensureLogin: async () => {
+        logins++;
+        throw new Error('已取消登录');
+      },
+      message: (e) => e.message,
+      session: () => null,
+    },
+    { setStorageSync() {} },
+  );
+  p.data.form.title = '写了一半的名字';
+  await p.submit();
+  assert.equal(logins, 1);
+  assert.equal(p.data.error, '已取消登录');
+  assert.equal(p.data.form.title, '写了一半的名字');
+  assert.equal(p.data.loggedIn, false);
+  assert.equal(p.data.busy, false);
+});
+
+test('partial photo upload failure preserves draft and resumes without uploading successful photos again', async () => {
+  const uploaded = [],
+    drafts = [],
+    posted = [];
+  let fail = true;
+  const p = page(
+    'publish',
+    {
+      ensureLogin: async () => {},
+      message: (e) => e.message,
+      session: () => ({ user: {} }),
+      uploadPhoto: async (file) => {
+        uploaded.push(file);
+        if (file === 'photo2' && fail) throw new Error('照片连接中断');
+        return { id: (file === 'photo1' ? 'a' : 'b').repeat(32) };
+      },
+      request: async (path, method, input) => {
+        posted.push(input);
+        return { id: 3 };
+      },
+    },
+    {
+      setStorageSync: (key, value) => drafts.push(value),
+      removeStorageSync() {},
+      showToast() {},
+      navigateTo() {},
+      getFileSystemManager: () => ({ removeSavedFile() {} }),
+    },
+  );
+  Object.assign(p.data.form, {
+    title: '公园小滑梯',
+    address: '公园东门',
+    description: '这是一个测试介绍',
+    latitude: 31,
+    longitude: 121,
+  });
+  p.data.photos = [{ path: 'photo1' }, { path: 'photo2' }];
+  await p.submit();
+  assert.equal(p.data.error, '照片连接中断');
+  assert.equal(p.data.photos[0].id, 'a'.repeat(32));
+  assert.equal(posted.length, 0);
+  assert.equal(drafts.at(-1).photoFiles.length, 2);
+  fail = false;
+  await p.submit();
+  assert.deepEqual(uploaded, ['photo1', 'photo2', 'photo2']);
+  assert.equal(posted.length, 1);
+  assert.deepEqual(Array.from(posted[0].photos), ['a'.repeat(32), 'b'.repeat(32)]);
+  assert.equal(p.data.photos.length, 0);
+});
+
+test('seating choices are exclusive; manual parking edits clear stale navigation coordinates', () => {
+  const p = page('publish', {}, { setStorageSync() {} });
+  p.amenity({ currentTarget: { dataset: { value: '座椅多' } } });
+  p.amenity({ currentTarget: { dataset: { value: '座椅少' } } });
+  p.amenity({ currentTarget: { dataset: { value: '可骑车' } } });
+  assert.deepEqual(Array.from(p.data.form.amenities), ['座椅少', '可骑车']);
+  p.data.form.parkingLocation = { latitude: 31, longitude: 121 };
+  p.input({ currentTarget: { dataset: { field: 'parkingAddress' } }, detail: { value: '新的停车场' } });
+  assert.equal(p.data.form.parkingLocation, null);
 });

@@ -8,7 +8,7 @@
 
 ## 本地运行
 
-需要 Node.js 22.13+（建议 Node.js 24 LTS），生产运行时无第三方 npm 依赖。
+需要 Node.js 22.13+（建议 Node.js 24 LTS），图片处理使用 sharp，安装时自动选择对应平台的依赖。
 
 ```sh
 npm install
@@ -36,9 +36,10 @@ AppSecret 仅用于微信登录与内容安全检查；**不是**小程序代码
 
 ## 已实现
 
-- 腾讯地图原生 `map`：坐标标记、点击标记查看、附近检索、拖动或缩放后搜索区域；支持切换列表。
-- 搜索名称、地址或城市；按场地类型、免费筛选，按距离或评分排序；列表分页。
-- `wx.chooseLocation` 选点发布：名称、地址、介绍、场地类型、适合年龄、收费、开放时间和设施。未发布草稿保存在本机。
+- 腾讯地图原生 `map`：坐标标记、点击标记查看、附近检索、拖动或缩放后搜索区域；首页保持地图视图。
+- 搜索名称、地址或城市；按场地类型、免费筛选，按距离或评分排序；支持分页加载地点。
+- `wx.chooseLocation` 选点发布：名称、地址、介绍、场地类型、适合年龄、收费、开放时间和设施。未发布草稿保存在本机。设施三列显示，支持座椅多／少、骑车、停车收费情况、交通说明与停车场选点导航。
+- 分享支持最多6张现场照片，发布时上传自建图床；详情可浏览大图。照片经压缩、去除GPS等元数据及微信内容检查后保存。
 - `wx.openLocation` 打开微信位置详情，可从中进入路线导航；分享卡片可直接进入滑梯详情。
 - 1–5 星评分与文字评价；每个用户每个地点最多一条，可更新、删除，评分始终从有效评价聚合，不能评价自己的分享。
 - `wx.login` / 服务端 code2Session 识别身份；昵称由用户主动填写，头像显示昵称首字，不采集头像照片、手机号或真实姓名。
@@ -64,6 +65,6 @@ docs/             部署、接口、验证与 Logo 说明
 
 后端部署模板和微信后台设置见 [部署说明](docs/DEPLOYMENT.md)，接口见 [API](docs/API.md)，验证记录见 [验证说明](docs/VALIDATION.md)。Logo 提示词与生成方式见 [品牌说明](docs/BRAND.md)。
 
-2026-09-30 已部署公网 API 并生成小程序预览二维码，未提审或正式发布。公网数据库初始为空，不包含演示地点。微信后台的请求域名、位置接口权限、隐私保护指引和运营方联系方式仍需核对，并完成微信真机验收。原生腾讯地图接入参考 [腾讯位置服务官方组件文档](https://github.com/TencentLBS/tencentmap-miniprogram-skill/blob/main/references/map_component_guide.md)；位置权限声明参考 [微信官方示例](https://github.com/wechat-miniprogram/miniprogram-demo/blob/master/miniprogram/app.json)。
+2026-09-30 已部署公网 API 并生成小程序预览二维码，未提审或正式发布。公网数据库初始为空，不包含演示地点。请求与图片域名已核对；微信后台的位置接口权限、隐私保护指引（含相册/拍照选图）和运营方联系方式仍需核对，并完成微信真机验收。原生腾讯地图接入参考 [腾讯位置服务官方组件文档](https://github.com/TencentLBS/tencentmap-miniprogram-skill/blob/main/references/map_component_guide.md)；位置权限声明参考 [微信官方示例](https://github.com/wechat-miniprogram/miniprogram-demo/blob/master/miniprogram/app.json)。
 
 MIT License。

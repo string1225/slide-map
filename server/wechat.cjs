@@ -11,8 +11,8 @@ function createWechat({ appid, secret, fetchImpl = fetch }) {
         method: body ? 'POST' : 'GET',
         redirect: 'error',
         signal: AbortSignal.timeout(8000),
-        headers: body ? { 'Content-Type': 'application/json' } : {},
-        body: body ? JSON.stringify(body) : undefined,
+        headers: body && !(body instanceof FormData) ? { 'Content-Type': 'application/json' } : {},
+        body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
       });
       if (!res.ok) throw new Error();
       return await res.json();
@@ -35,6 +35,18 @@ function createWechat({ appid, secret, fetchImpl = fetch }) {
     return tokenRequest;
   }
   return {
+    async moderateImage(image) {
+      const form = new FormData();
+      form.append('media', new Blob([image], { type: 'image/jpeg' }), 'photo.jpg');
+      let data;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        data = await call('/wxa/img_sec_check', { access_token: await accessToken() }, form);
+        if (![40001, 40014, 42001].includes(data.errcode)) break;
+        tokenUntil = 0;
+      }
+      if (data.errcode === 87014) throw new HttpError(422, '照片未通过内容检查，请更换照片');
+      if (data.errcode !== 0) throw new HttpError(503, '照片检查暂不可用，请稍后重试');
+    },
     async login(code) {
       const data = await call('/sns/jscode2session', {
         appid,

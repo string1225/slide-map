@@ -1,6 +1,6 @@
 # 部署与微信接入
 
-2026-09-30 已部署独立后端，发布目录为 `/opt/slide-map/releases/20260930055833`，并生成微信小程序预览版。原有 hexwar 健康检查通过；未提审或正式发布小程序。
+2026-09-30 已部署独立后端，当前发布目录为 `/opt/slide-map/releases/20260930104632`，并生成微信小程序预览版。原有 hexwar 健康检查通过；未提审或正式发布小程序。
 
 公网健康检查：`https://www.sunny-string.cn/wechat/slide-map/api/health`；地点列表：`https://www.sunny-string.cn/wechat/slide-map/api/slides`。真实数据库初始为空，浏览器演示数据未部署。
 
@@ -21,7 +21,7 @@
 | systemd       | `deploy/slide-map.service`            |
 | Nginx include | `deploy/slide-map-location.conf`      |
 
-部署代码只需 `server/*.cjs`、`miniprogram/lib/domain.js`、`scripts/moderate.cjs`。生产服务没有 npm 运行时依赖。不要上传 `server/.env` 到可公开访问的目录，不要部署本机演示入口或 `data/demo.sqlite`。
+部署代码只需 `server/*.cjs`、`miniprogram/lib/domain.js`、`scripts/moderate.cjs`。新增 sharp 用于图片解码、压缩与移除元数据，部署脚本使用锁文件执行 `npm ci --omit=dev`，安装目标平台的运行依赖。不要上传 `server/.env` 到可公开访问的目录，不要部署本机演示入口或 `data/demo.sqlite`。
 
 1. 创建独立系统用户、版本目录和服务端环境目录，将指定代码上传至版本目录。
 2. 在服务器受保护的环境文件中填写本 AppID 与 AppSecret，数据库设为 `/var/lib/slide-map/slide-map.sqlite`，`PORT=3042`，`TRUST_PROXY=1`。凭据不放入 shell 参数、发布包或 Git。
@@ -41,9 +41,9 @@
 
 使用独立小程序 AppID `wx9792f4cedeea9c45`。服务器 AppSecret 已在本机被忽略的环境文件中配置；部署时使用相同 AppID 对应的当前有效 Secret。
 
-- 将生产 HTTPS 域名加入 request 合法域名。
+- 2026-09-30 已从微信开发工具获取的项目配置确认 request / uploadFile / downloadFile 合法域名包含 `https://www.sunny-string.cn`；与当前 API 配置一致。
 - 在类目支持的前提下申请和启用 `getLocation`、`chooseLocation` 等所需位置能力。项目已在 app.json 声明相关私密接口和使用目的。
-- 填写隐私保护指引，涵盖主动定位、选择地点、微信身份、公开昵称、用户提交文本与微信内容检查；客户端含隐私同意弹窗。补全 `supportEmail`，同步真实运营主体与保存/删除流程。
+- 填写隐私保护指引，涵盖主动定位、选择地点、微信身份、公开昵称、用户提交文本、现场照片、停车信息与微信内容检查；客户端含隐私同意弹窗。补全 `supportEmail`，同步真实运营主体与保存/删除流程。
 - 可在腾讯位置服务控制台申请此项目专用 Key，绑定小程序，填入 `tencentMapKey`（传给原生 map 的 subkey）。当前使用标准原生地图，不调用付费个性化样式、WebService 地理编码或导航插件。
 - 服务器需能访问 `api.weixin.qq.com`；按后台设置把出口 IP 加入相应白名单。内容安全接口需具备调用权限。获取 access_token 成功不代表所有权限已开通。
 - 登录识别不等于获取微信昵称。小程序使用用户主动填写的 nickname 输入；首次默认昵称为“滑梯探索者”，头像使用首字作为占位。
@@ -77,3 +77,9 @@ SQLite 使用 WAL 和外键。使用 SQLite 在线备份 API，或停服后完�
 - [微信打开地图位置](https://developers.weixin.qq.com/miniprogram/dev/api/location/wx.openLocation.html)
 
 微信开发文档页面在本次自动抓取中不可达；地图与权限声明同时参照微信和腾讯位置服务官方 GitHub 仓库。真实账号能力以公众平台配置及真机结果为准。
+
+## 照片版本升级（2026-09-30）
+
+升级前通过 SQLite 在线备份保存于 `/opt/slide-map/backups/pre-photos-20260930104613/slide-map.sqlite`。迁移仅为 slides 增加 travel/photos 字段和新增照片表，不清空旧数据；回滚旧代码仍可读取原数据。Nginx 接收上限调整为8 MiB，JSON接口自身保持16 KiB限制。照片通过同一HTTPS服务提供，不需要额外图床账户。
+
+本机及生产服务器以项目logo验证微信图片内容检查，返回 errcode=0；正式服务器获取 access_token 返回成功。同步图片检查接口当前可用，后续需跟随微信平台变化维护。以上验证不替代用户真实 wx.login code 的交换以及手机网络验证。

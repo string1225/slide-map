@@ -42,6 +42,7 @@ rollback() {
 }
 trap rollback ERR
 tar -xzf "$archive" -C "$release" --no-same-owner
+npm ci --omit=dev --prefix "$release" --no-audit --no-fund
 chmod -R u=rwX,go=rX "$release"
 install -m 644 "$release/deploy/slide-map-location.conf" "$snippet"
 install -m 644 "$release/deploy/slide-map.service" "$unit"

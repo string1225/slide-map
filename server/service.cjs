@@ -1,4 +1,5 @@
 const http = require('node:http');
+const { readPhoto } = require('./photos.cjs');
 const { HttpError } = require('./store.cjs');
 const {
   TYPES,
@@ -100,6 +101,23 @@ function createApi({ store, wechat, appid, demo = false, trustedProxy = false, s
         auth();
         rate(`write:${user.id}`, 30);
       }
+      if (path === '/api/photos' && method === 'POST') {
+        rate(`photo:${user.id}`, 12);
+        const photo = await readPhoto(req);
+        await wechat.moderateImage(photo);
+        return send(res, 201, store.savePhoto(user.id, photo));
+      }
+      const photoMatch = /^\/api\/photos\/([a-f0-9]{32})$/.exec(path);
+      if (photoMatch && method === 'GET') {
+        const photo = store.photo(photoMatch[1]);
+        res.writeHead(200, {
+          'Content-Type': 'image/jpeg',
+          'Content-Length': photo.length,
+          'X-Content-Type-Options': 'nosniff',
+          'Cache-Control': 'no-store',
+        });
+        return res.end(photo);
+      }
       if (path === '/api/auth/logout' && method === 'POST') {
         store.logout(token);
         return send(res, 200, { ok: true });
@@ -149,7 +167,7 @@ function createApi({ store, wechat, appid, demo = false, trustedProxy = false, s
         const input = slideInput(await readBody(req));
         await wechat.moderate(
           user.openid,
-          `${input.title}\n${input.address}\n${input.description}\n${input.openingHours}`,
+          `${input.title}\n${input.address}\n${input.description}\n${input.openingHours}\n${input.traffic}\n${input.parkingAddress}`,
         );
         return send(res, 201, store.createSlide(user.id, input));
       }
@@ -164,7 +182,7 @@ function createApi({ store, wechat, appid, demo = false, trustedProxy = false, s
           const input = slideInput(await readBody(req));
           await wechat.moderate(
             user.openid,
-            `${input.title}\n${input.address}\n${input.description}\n${input.openingHours}`,
+            `${input.title}\n${input.address}\n${input.description}\n${input.openingHours}\n${input.traffic}\n${input.parkingAddress}`,
           );
           return send(res, 200, store.updateSlide(id, user.id, input));
         }
@@ -208,7 +226,7 @@ function createApi({ store, wechat, appid, demo = false, trustedProxy = false, s
       });
     }
   });
-  server.requestTimeout = 15000;
+  server.requestTimeout = 60000;
   server.headersTimeout = 10000;
   return server;
 }

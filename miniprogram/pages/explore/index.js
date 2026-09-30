@@ -9,7 +9,6 @@ Page({
     query: '',
     free: false,
     sort: 'distance',
-    view: 'map',
     latitude: 31.2304,
     longitude: 121.4737,
     radius: 10,
@@ -110,9 +109,6 @@ Page({
   free() {
     this.setData({ free: !this.data.free });
     this.load();
-  },
-  toggleView() {
-    this.setData({ view: this.data.view === 'map' ? 'list' : 'map' });
   },
   sort() {
     this.setData({ sort: this.data.sort === 'rating' ? 'distance' : 'rating' });
