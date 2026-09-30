@@ -1,6 +1,6 @@
 {
   "appid": "wx9792f4cedeea9c45",
-  "apiBase": "http://127.0.0.1:3042/api",
+  "apiBase": "https://www.sunny-string.cn/wechat/slide-map/api",
   "supportEmail": "",
   "tencentMapKey": ""
 }

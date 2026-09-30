@@ -26,11 +26,13 @@ npm run dev
 
 1. 执行 `npm run build`。
 2. 导入**仓库根目录**，项目类型选“小程序”。`project.config.json` 指向 `dist/wechat/`。
-3. 开发机 API 默认使用 `http://127.0.0.1:3042/api`。仅在本机调试时，可在开发工具中允许本地服务请求；真机需使用已配置的 HTTPS 合法域名。
+3. 小程序默认连接 `https://www.sunny-string.cn/wechat/slide-map/api`，已部署独立服务。需要本机 API 时，将 config.local.json 的 apiBase 改为 `http://127.0.0.1:3042/api`；本机请求仅用于开发工具调试。
 4. 客户端配置需要变更时，复制 `config.example.json` 为 `config.local.json`，设置 `apiBase`、运营联系邮箱 `supportEmail`、可选腾讯地图 `tencentMapKey`，重新构建。使用自定义 AppID 时导入 `dist`，其中生成的项目配置会同步 AppID。
 5. 每次修改源码后重新构建，再在开发者工具中编译。
 
-AppSecret 仅用于微信登录与内容安全检查；**不是**小程序代码上传私钥。上传、预览二维码还需当前账号具有项目权限或配置此 AppID 独立的上传私钥。本仓库不复用 hexwar 的私钥。
+AppSecret 仅用于微信登录与内容安全检查；**不是**小程序代码上传私钥。当前预览使用已登录的微信开发者工具，无需上传私钥。工具登录后运行 `npm run wechat:preview`，二维码输出到 `artifacts/wechat-preview.jpg`（同时保留带时间戳的文件）。如需重登，执行开发工具 CLI 的 login 命令扫码。可通过 WECHAT_DEVTOOLS_CLI 指定 cli.bat 路径。
+
+`npm run deploy` 将独立 API 发布到 hexwar 所在的 aliyun-139 服务器；凭据通过 SSH 标准输入写入 root 专用环境文件，不进入发布包。Nginx 检查与健康检查失败会回滚部署配置。详见部署说明。
 
 ## 已实现
 
@@ -62,6 +64,6 @@ docs/             部署、接口、验证与 Logo 说明
 
 后端部署模板和微信后台设置见 [部署说明](docs/DEPLOYMENT.md)，接口见 [API](docs/API.md)，验证记录见 [验证说明](docs/VALIDATION.md)。Logo 提示词与生成方式见 [品牌说明](docs/BRAND.md)。
 
-当前未部署公网服务，未上传微信开发版本、提审或发布。微信后台仍需配置请求域名、位置接口权限、隐私保护指引和运营方联系方式，并完成微信真机验收。原生腾讯地图接入参考 [腾讯位置服务官方组件文档](https://github.com/TencentLBS/tencentmap-miniprogram-skill/blob/main/references/map_component_guide.md)；位置权限声明参考 [微信官方示例](https://github.com/wechat-miniprogram/miniprogram-demo/blob/master/miniprogram/app.json)。
+2026-09-30 已部署公网 API 并生成小程序预览二维码，未提审或正式发布。公网数据库初始为空，不包含演示地点。微信后台的请求域名、位置接口权限、隐私保护指引和运营方联系方式仍需核对，并完成微信真机验收。原生腾讯地图接入参考 [腾讯位置服务官方组件文档](https://github.com/TencentLBS/tencentmap-miniprogram-skill/blob/main/references/map_component_guide.md)；位置权限声明参考 [微信官方示例](https://github.com/wechat-miniprogram/miniprogram-demo/blob/master/miniprogram/app.json)。
 
 MIT License。

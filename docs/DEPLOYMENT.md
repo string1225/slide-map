@@ -1,6 +1,8 @@
 # 部署与微信接入
 
-本仓库当前完成本机开发与验证，以下为**待执行**的部署方案，没有改动 hexwar 服务、Nginx 或微信公众平台配置。
+2026-09-30 已部署独立后端，发布目录为 `/opt/slide-map/releases/20260930055833`，并生成微信小程序预览版。原有 hexwar 健康检查通过；未提审或正式发布小程序。
+
+公网健康检查：`https://www.sunny-string.cn/wechat/slide-map/api/health`；地点列表：`https://www.sunny-string.cn/wechat/slide-map/api/slides`。真实数据库初始为空，浏览器演示数据未部署。
 
 ## 独立服务
 
@@ -27,7 +29,13 @@
 4. 将 Nginx include 加入现有 HTTPS server 块，先备份配置并执行 `nginx -t`，通过后 reload。模板末尾带 `/api/` 的 proxy_pass 会正确剥离公网前缀。
 5. 验证公网 HTTPS `/wechat/slide-map/api/health`，再把 `config.local.json` 的 apiBase 指向该地址的 `/api` 根路径。例如使用现有域名时为 `https://www.sunny-string.cn/wechat/slide-map/api`。重新执行 `npm run build`。
 
-尚未确认服务器上的 3042 端口与上述路径是否空闲；部署前检查，不覆盖已有服务。
+首次部署已确认端口及路径空闲。后续运行 `npm run deploy` 会生成独立版本，检查 Nginx 配置与服务健康再 reload；失败恢复原配置，保留发布包和备份用于排查。脚本会拒绝首次部署时占用已有的 3042 端口。不会重启 hexwar 服务。
+
+## 生成预览码
+
+运行 `npm run wechat:preview`。脚本先构建，再使用微信开发者工具配套 Node/CLI 生成带时间戳的二维码，成功后更新 `artifacts/wechat-preview.jpg`。预览要求 HTTPS API 和具有此 AppID 权限的工具登录账号。登录码和预览码不同：login 用于登录工具，preview 才用于在手机打开小程序。失效后重新运行对应命令。
+
+本次已启用开发工具本机 CLI 服务并完成扫码登录。通过预览上传不代表位置接口、隐私指引或 request 域名配置已通过真机验收。
 
 ## 微信公众平台
 
@@ -39,7 +47,7 @@
 - 可在腾讯位置服务控制台申请此项目专用 Key，绑定小程序，填入 `tencentMapKey`（传给原生 map 的 subkey）。当前使用标准原生地图，不调用付费个性化样式、WebService 地理编码或导航插件。
 - 服务器需能访问 `api.weixin.qq.com`；按后台设置把出口 IP 加入相应白名单。内容安全接口需具备调用权限。获取 access_token 成功不代表所有权限已开通。
 - 登录识别不等于获取微信昵称。小程序使用用户主动填写的 nickname 输入；首次默认昵称为“滑梯探索者”，头像使用首字作为占位。
-- AppSecret 不能用于 miniprogram-ci 上传。生成真机预览或开发版本需开发者工具登录项目授权账号，或者配置此 AppID 的代码上传私钥。没有上传、提审或正式发布。
+- AppSecret 不能用于 miniprogram-ci 上传。当前通过开发者工具授权账号生成预览，未提审或正式发布。改用 miniprogram-ci 时需此 AppID 专用代码上传私钥。
 
 ## 内容管理
 

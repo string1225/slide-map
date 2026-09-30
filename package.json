@@ -12,6 +12,8 @@
     "build": "node scripts/build.cjs",
     "test": "node --test tests/*.test.cjs",
     "check": "npm test && npm run build",
-    "moderate": "node --env-file=server/.env scripts/moderate.cjs"
+    "moderate": "node --env-file=server/.env scripts/moderate.cjs",
+    "deploy": "node scripts/deploy.cjs",
+    "wechat:preview": "npm run build && node scripts/wechat-preview.cjs"
   }
 }
