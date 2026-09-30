@@ -1,0 +1,30 @@
+.location {
+  display: flex;
+  align-items: center;
+  gap: 22rpx;
+  background: #eaf0de;
+  text-align: left;
+  font-weight: 500;
+  padding: 28rpx;
+}
+.pin {
+  font-size: 50rpx;
+  color: #205b46;
+}
+.location .muted {
+  font-size: 23rpx;
+  margin-top: 6rpx;
+}
+.cost-picker {
+  width: 180rpx;
+}
+.count {
+  text-align: right;
+  margin-top: 10rpx;
+  font-size: 22rpx;
+}
+.draft-note {
+  text-align: center;
+  padding-top: 25rpx;
+  font-size: 23rpx;
+}

@@ -1,0 +1,9 @@
+{
+  "description": "滑滑梯地图 — 分享城市里的小小快乐",
+  "compileType": "miniprogram",
+  "miniprogramRoot": "dist/wechat/",
+  "appid": "wx9792f4cedeea9c45",
+  "projectname": "slide-map",
+  "setting": { "es6": true, "minified": true, "urlCheck": true, "postcss": true },
+  "libVersion": "3.10.0"
+}

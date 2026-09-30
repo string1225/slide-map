@@ -1,0 +1,42 @@
+.login-card {
+  text-align: center;
+  padding: 45rpx 35rpx;
+}
+.logo {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 32rpx;
+  margin-bottom: 20rpx;
+}
+.privacy-link {
+  margin-top: 24rpx;
+}
+.profile .section-title {
+  margin-bottom: 6rpx;
+}
+.stats {
+  display: flex;
+  background: #205b46;
+  color: #e9f0db;
+  border-radius: 26rpx;
+  padding: 30rpx;
+  justify-content: space-around;
+  text-align: center;
+  font-size: 24rpx;
+}
+.number {
+  font-size: 48rpx;
+  color: #f5d881;
+  font-weight: 700;
+}
+.profile-note {
+  font-size: 22rpx;
+  margin-top: 18rpx;
+}
+.footer {
+  text-align: center;
+  font-size: 21rpx;
+  color: #8e9b84;
+  line-height: 2.5;
+  margin-top: 50rpx;
+}

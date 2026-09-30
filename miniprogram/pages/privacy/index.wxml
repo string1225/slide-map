@@ -1,0 +1,7 @@
+<view class="page"><view class="eyebrow">YOUR PRIVACY MATTERS</view><view class="title section">只为更好地发现快乐</view><view class="muted section">更新日期：2026年9月30日</view>
+<view class="section"><view class="section-title">用户身份与公开资料</view><view>浏览无需登录。主动登录后，我们通过微信登录凭证在服务端获取 OpenID，用于识别同一账号，记录注册和最近登录时间，关联你的分享、收藏与评价。OpenID、登录密钥不会公开展示；登录会话保存在本机，退出登录后失效。</view></view>
+<view class="section"><view class="section-title">你分享的信息</view><view>滑梯名称、地点、介绍、评分、评价和你填写的昵称会公开展示。默认昵称为“滑梯探索者”。我们不自动获取微信头像和昵称，不收集手机号。你可在“我的”页面修改昵称，在详情页修改或删除自己的分享与评价。</view></view>
+<view class="section"><view class="section-title">位置与地图服务</view><view>仅在你主动定位、选点或导航时申请位置相关权限。定位用于查找附近滑梯；提交分享时保存你选定的滑梯坐标与地址。我们不保存浏览时的实时位置轨迹。地图、选点和导航由微信及腾讯位置服务提供。</view></view>
+<view class="section"><view class="section-title">内容检查与数据保存</view><view>提交昵称、地点介绍和评价时，文本与必要的微信身份标识会发送至微信内容安全接口进行检查。分享、评价、收藏与账号记录存储于服务端；未发布草稿仅存储在当前设备。内容保存至你主动删除或管理员处理。</view></view>
+<view class="section"><view class="section-title">管理你的信息</view><view>可在微信设置中撤回位置授权。删除自己的分享会同时删除其关联评价和收藏。退出登录仅清除本机登录状态，不删除已发布内容。如需注销账号、导出或删除账号数据，请联系运营方。</view><view wx:if="{{supportEmail}}" class="notice">联系邮箱：{{supportEmail}}</view><view wx:else class="notice">当前为开发版本，运营方联系方式将在正式上线前补全。</view></view>
+<button class="ghost section" bindtap="open">查看微信平台隐私保护指引</button></view><privacy-dialog id="privacy"/>

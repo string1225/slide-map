@@ -1,0 +1,47 @@
+{
+  "pages": [
+    "pages/explore/index",
+    "pages/publish/index",
+    "pages/mine/index",
+    "pages/detail/index",
+    "pages/privacy/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "滑滑梯地图",
+    "navigationBarBackgroundColor": "#f7f5ec",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f7f5ec"
+  },
+  "tabBar": {
+    "color": "#838b80",
+    "selectedColor": "#205b46",
+    "backgroundColor": "#fffef9",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/explore/index",
+        "text": "发现",
+        "iconPath": "assets/explore.png",
+        "selectedIconPath": "assets/explore-active.png"
+      },
+      {
+        "pagePath": "pages/publish/index",
+        "text": "分享滑梯",
+        "iconPath": "assets/add.png",
+        "selectedIconPath": "assets/add-active.png"
+      },
+      {
+        "pagePath": "pages/mine/index",
+        "text": "我的",
+        "iconPath": "assets/person.png",
+        "selectedIconPath": "assets/person-active.png"
+      }
+    ]
+  },
+  "permission": { "scope.userLocation": { "desc": "用于查找附近滑梯、选择分享地点和前往导航" } },
+  "requiredPrivateInfos": ["getLocation", "chooseLocation"],
+  "usingComponents": { "privacy-dialog": "/components/privacy/index" },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

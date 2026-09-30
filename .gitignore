@@ -1,0 +1,14 @@
+node_modules/
+dist/
+artifacts/
+data/
+*.sqlite
+*.sqlite-*
+*.log
+.env
+.env.*
+!.env.example
+config.local.json
+project.private.config.json
+*.key
+.secrets/

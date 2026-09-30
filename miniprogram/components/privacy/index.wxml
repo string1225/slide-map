@@ -1,0 +1,9 @@
+<view wx:if="{{visible}}" class="mask">
+  <view class="dialog">
+    <view class="heading">你的隐私，由你决定</view>
+    <view class="copy">使用定位或选择地点前，请阅读并同意隐私保护指引。我们仅在你主动操作时使用位置，不记录实时位置轨迹。</view>
+    <view class="link" bindtap="open">查看《用户隐私保护指引》</view>
+    <button id="agree-privacy" open-type="agreePrivacyAuthorization" bindagreeprivacyauthorization="agree">同意并继续</button>
+    <button class="cancel" bindtap="reject">暂不使用</button>
+  </view>
+</view>

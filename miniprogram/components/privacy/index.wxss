@@ -1,0 +1,47 @@
+.mask {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(25, 44, 34, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dialog {
+  width: 620rpx;
+  background: #fffef9;
+  border-radius: 32rpx;
+  padding: 40rpx;
+  box-sizing: border-box;
+}
+.heading {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #205b46;
+}
+.copy {
+  font-size: 27rpx;
+  line-height: 1.8;
+  color: #687765;
+  margin: 25rpx 0;
+}
+.link {
+  font-size: 26rpx;
+  color: #205b46;
+  text-decoration: underline;
+  margin-bottom: 30rpx;
+}
+button {
+  background: #205b46;
+  color: white;
+  border-radius: 18rpx;
+  font-size: 28rpx;
+  margin-top: 16rpx;
+}
+button::after {
+  border: 0;
+}
+.cancel {
+  background: #edf1e5;
+  color: #63765a;
+}

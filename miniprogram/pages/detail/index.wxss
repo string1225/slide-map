@@ -1,0 +1,55 @@
+.detail-map {
+  width: 100%;
+  height: 350rpx;
+}
+.detail-body {
+  position: relative;
+  border-radius: 35rpx 35rpx 0 0;
+  margin-top: -25rpx;
+  background: #f7f5ec;
+}
+.detail-body .title {
+  margin-top: 18rpx;
+}
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22rpx;
+  padding: 28rpx;
+  background: #eaf0df;
+  border-radius: 24rpx;
+}
+.wide {
+  grid-column: span 2;
+}
+.description,
+.review-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.9;
+}
+.byline {
+  font-size: 22rpx;
+  margin-top: 28rpx;
+}
+.review-text {
+  margin-top: 18rpx;
+}
+.rate-picker {
+  display: flex;
+  justify-content: space-around;
+  margin: 15rpx 0 25rpx;
+}
+.rate-picker button {
+  background: transparent;
+  color: #d9ddcf;
+  font-size: 60rpx;
+  padding: 0;
+}
+.rate-picker .filled {
+  color: #d5aa42;
+}
+.remove-review {
+  text-align: center;
+  margin-top: 22rpx;
+}

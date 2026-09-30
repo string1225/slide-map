@@ -1,0 +1,25 @@
+[Unit]
+Description=Slide Map WeChat community API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=slide-map
+Group=slide-map
+WorkingDirectory=/opt/slide-map/current
+ExecStart=/usr/bin/node server/index.cjs
+EnvironmentFile=/etc/slide-map/server.env
+StateDirectory=slide-map
+StateDirectoryMode=0700
+UMask=0077
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/slide-map
+
+[Install]
+WantedBy=multi-user.target

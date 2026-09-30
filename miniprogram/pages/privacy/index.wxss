@@ -1,0 +1,6 @@
+.page {
+  line-height: 1.9;
+}
+.section-title {
+  color: #205b46;
+}

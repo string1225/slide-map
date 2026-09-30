@@ -1,0 +1,17 @@
+{
+  "name": "slide-map",
+  "version": "0.1.0",
+  "private": true,
+  "description": "滑滑梯地图 · 一起发现下一处快乐",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.cjs",
+    "start": "node --env-file=server/.env server/index.cjs",
+    "build": "node scripts/build.cjs",
+    "test": "node --test tests/*.test.cjs",
+    "check": "npm test && npm run build",
+    "moderate": "node --env-file=server/.env scripts/moderate.cjs"
+  }
+}
